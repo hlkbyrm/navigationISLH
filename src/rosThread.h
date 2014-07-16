@@ -1,9 +1,10 @@
 
 #include <ros/ros.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
+#include <sensor_msgs/Imu.h>
 #include "navigationController.h"
 #include "navigationISLH/robotInfo.h"
 #include "navigationISLH/neighborInfo.h"
@@ -15,7 +16,7 @@
 #include <QDateTime>
 
 
-#define numOfRobots 5
+#define numOfRobots 2
 
 class Robot
 {
@@ -25,11 +26,11 @@ public:
     double radius;
     double targetX;
     double targetY;
-    double initialX;
-    double initialY;
+    //double initialX;
+    //double initialY;
 
 };
-class Obstacle
+/*class Obstacle
 {
 public:
     int id;
@@ -38,7 +39,7 @@ public:
     double y;
 
 
-};
+};*/
 
 class RosThread:public QObject
 {
@@ -50,7 +51,7 @@ public:
 
     Robot robot;
 
-    QVector<Obstacle> obstacles;
+    //QVector<Obstacle> obstacles;
 
    // RosThread(int argc, char **argv, std::string nodeName);
 
@@ -69,29 +70,39 @@ private:
 
      ros::NodeHandle n;
 
-     ros::Subscriber amclSub;
+     ros::Subscriber poseListSub;
 
-     ros::Subscriber neighborInfoSubscriber;
+     ros::Subscriber targetPoseListSub;
+     ros::Subscriber turtlebotGyroSub;
+     ros::Subscriber turtlebotOdomSub;
+
+     //ros::Subscriber neighborInfoSubscriber;
 
      ros::Subscriber turtlebotOdometrySubscriber;
 
-     ros::Publisher robotinfoPublisher;
+     //ros::Publisher robotinfoPublisher;
 
-     ros::Publisher coordinatorUpdatePublisher;
+     //ros::Publisher coordinatorUpdatePublisher;
 
      ros::Publisher turtlebotVelPublisher;
 
-     ros::Publisher amclInitialPosePublisher;
+     //ros::Publisher amclInitialPosePublisher;
 
-     void amclPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &msg);
+     void poseListCallback(const geometry_msgs::PoseArray::ConstPtr &msg);
 
-     void turtlebotOdometryCallback(const nav_msgs::Odometry & msg);
+     void targetPoseListCallback(const geometry_msgs::PoseArray::ConstPtr &msg);
 
-     void neighborInfoCallback(navigationISLH::neighborInfo neighborInfo);
+     void turtlebotOdometryCallback(const nav_msgs::Odometry::ConstPtr & msg);
 
-     void poseUpdate(const ros::TimerEvent&);
+     void turtlebotGyroCallback(const sensor_msgs::Imu::ConstPtr & msg);
 
-     void coordinatorUpdate(const ros::TimerEvent&);
+     void turtlebotOdomCallback(const nav_msgs::Odometry::ConstPtr & msg);
+
+     //void neighborInfoCallback(navigationISLH::neighborInfo neighborInfo);
+
+     //void poseUpdate(const ros::TimerEvent&);
+
+     //void coordinatorUpdate(const ros::TimerEvent&);
 
      void robotContoller(double [], int , double [][4], double [][3], double [][4], double, double []);
 
@@ -107,15 +118,17 @@ private:
      double b_rs[numOfRobots+1][4]; // robots' positions within sensing range
      double ro;
      double kkLimits[2]; // upper and lower bounds of parameters in navigation function
-     double bp[5][4];
+     //double bp[5][4];
+
+     double radYaw;
 
      QFile poseFile;
 
-     int poseUpdatePeriod;
-     int coordinatorUpdatePeriod;
+     //int poseUpdatePeriod;
+     //int coordinatorUpdatePeriod;
 
      // The robot's angle threshold while rotating in degrees
-     int angleThreshold;
+     double angleThreshold;
 
      // The robot's distance threshold for goal achievement in cms
      int distanceThreshold;
@@ -131,10 +144,10 @@ private:
      int partDist;
 
      // Pose update timer
-     ros::Timer pt;
+     //ros::Timer pt;
 
      // Coordinator update timer
-     ros::Timer ct;
+     //ros::Timer ct;
 
      geometry_msgs::Twist velocityVector;
 

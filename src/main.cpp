@@ -9,8 +9,6 @@ int main(int argc,char** argv){
 
     QApplication app(argc,argv);
 
-
-
     ros::init(argc,argv,"navigationISLH");
 
     RosThread* rosthread  = new RosThread;
@@ -18,7 +16,6 @@ int main(int argc,char** argv){
     QThread* worker = new QThread(&app);
 
     rosthread->moveToThread(worker);
-
 
    // QObject(&app,SIGNAL(aboutToQuit()),rosthread,SLOT(shutdownROS()));
 
