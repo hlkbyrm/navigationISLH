@@ -14,6 +14,9 @@
 #include <QObject>
 #include <QFile>
 #include <QDateTime>
+#include <QtNetwork/QtNetwork>
+#include <QXmlStreamReader>
+#include <QtCore/QByteArray>
 
 
 #define numOfRobots 2
@@ -86,6 +89,9 @@ private:
 
      ros::Publisher turtlebotVelPublisher;
 
+     QTcpSocket* socket;
+     ros::Timer timer;
+
      //ros::Publisher amclInitialPosePublisher;
 
      void poseListCallback(const geometry_msgs::PoseArray::ConstPtr &msg);
@@ -109,6 +115,8 @@ private:
      void calculateTurn(double desired, double current);
 
      void sendVelocityCommand();
+
+     void timerTick(const ros::TimerEvent&);
 
 
      double vel[2]; // velocity vector
@@ -142,6 +150,10 @@ private:
      int numrobots;
 
      int partDist;
+
+     bool feedbackToServer;
+
+     QString IP;
 
      // Pose update timer
      //ros::Timer pt;

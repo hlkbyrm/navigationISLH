@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 ###############################################################################
 FIND_PACKAGE(Qt4 REQUIRED)
+SET(QT_USE_QTNETWORK TRUE)
 
 INCLUDE(${QT_USE_FILE})
 ADD_DEFINITIONS(${QT_DEFINITIONS})
@@ -31,7 +32,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 #uncomment if you have defined messages
 add_message_files(
-  DIRECTORY msg 
+  DIRECTORY msg
   FILES
   helpMessage.msg
   hotspot.msg

@@ -7,6 +7,7 @@
 #include <qjson/parser.h>
 #include <QDir>
 #include <QFile>
+#include <QtNetwork/QHostInfo>
 
 RosThread::RosThread()
 {
@@ -61,7 +62,6 @@ void RosThread::work(){
 
 
     if(!readConfigFile(path)){
-
         qDebug()<< "Read Config File Failed!!!";
 
         ros::shutdown();
@@ -99,6 +99,21 @@ void RosThread::work(){
     this->turtlebotOdomSub = n.subscribe("/odom",2,&RosThread::turtlebotOdomCallback,this);
     //this->amclInitialPosePublisher = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose",1,true);
     //this->coordinatorUpdatePublisher = n.advertise<navigationISLH::robotInfo>("navigationISLH/coordinatorUpdate",1,true);
+
+    if(feedbackToServer){
+        socket = new QTcpSocket(this);
+        socket->setReadBufferSize(0);
+        qDebug() << "Host IP is: " << IP;
+        socket->connectToHost(IP,11000);
+        if(socket->waitForConnected(5000)){
+            timer = n.createTimer(ros::Duration(0.25),&RosThread::timerTick,this);
+            timer.start();
+            qDebug()<<"Connected";
+        }
+        else
+            qDebug()<<"Error timeout";
+    }
+
 
     //this->robotinfoPublisher = n.advertise<navigationISLH::robotInfo>("navigationISLH/robotInfo",1);
     //ros::AsyncSpinner spinner(2);
@@ -236,7 +251,7 @@ void RosThread::turtlebotGyroCallback(const sensor_msgs::Imu::ConstPtr& msg)
         diff = fabs(diff);
     }
     if((diff > angleThreshold*M_PI/180.0 && !turning) ||
-            (diff > angleThreshold/4*M_PI/180.0 && turning))
+            (diff > angleThreshold/2*M_PI/180.0 && turning))
     {
         turning = true;
         calculateTurn(calYaw,radYaw);
@@ -256,7 +271,9 @@ void RosThread::turtlebotGyroCallback(const sensor_msgs::Imu::ConstPtr& msg)
         turning = false;
         if(fabs(robot.targetX-bin[robot.robotID][1]) > distanceThreshold || fabs(robot.targetY-bin[robot.robotID][2]) > distanceThreshold){
            // qDebug()<<"Linear";
-            velocityVector.linear.x = 0.15;
+            velocityVector.linear.x = linearVelocity;
+            calculateTurn(calYaw,radYaw);
+            velocityVector.angular.z /= 2;
         }
         else
             velocityVector.linear.x = 0;
@@ -288,6 +305,10 @@ void RosThread::poseListCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
         bin[i][1] = msg->poses[i].position.x;
         bin[i][2] = msg->poses[i].position.y;
         bin[i][3] = robot.radius;
+        if(i != robot.robotID){
+            bt[i][1] = bin[i][1];
+            bt[i][2] = bin[i][2];
+        }
     }
 
     u_int64_t newPoseCallbackTime = ros::Time::now().toNSec();
@@ -386,7 +407,7 @@ void RosThread::poseListCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
         diff = fabs(diff);
     }
     if((diff > angleThreshold*M_PI/180.0 && !turning) ||
-            (diff > angleThreshold/4*M_PI/180.0 && turning) )
+            (diff > angleThreshold/2*M_PI/180.0 && turning) )
     {
         turning = true;
         calculateTurn(calYaw,radYaw);
@@ -406,7 +427,9 @@ void RosThread::poseListCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
         turning = false;
         if(fabs(robot.targetX-bin[robot.robotID][1]) > distanceThreshold || fabs(robot.targetY-bin[robot.robotID][2]) > distanceThreshold){
            // qDebug()<<"Linear";
-            velocityVector.linear.x = 0.15;
+            velocityVector.linear.x = linearVelocity;
+            calculateTurn(calYaw,radYaw);
+            velocityVector.angular.z /= 2;
         }
         else
             velocityVector.linear.x = 0;
@@ -493,6 +516,14 @@ bool RosThread::readConfigFile(QString filename)
         robot.robotID = result["robotID"].toInt();
 
         qDebug()<<result["robotID"].toString();
+
+        feedbackToServer = result["feedbackToServer"].toInt() == 1;
+
+        qDebug() << "feedbackToServer: " << (feedbackToServer?"true":"false");
+
+        IP = result["IP"].toString();
+
+        qDebug() << "IP: " << IP;
 
         int iscoord =   result["iscoordinator"].toInt();
         if(iscoord == 1) this->robot.isCoordinator = true;
@@ -614,6 +645,38 @@ void RosThread::calculateTurn(double desired, double current) {
 
     velocityVector.angular.z = dir*angularVelocity;
 
+}
+void RosThread::timerTick(const ros::TimerEvent&){
+    qDebug() << "entered";
+    if(!firstDataCame) return;
+    qDebug() << "writing";
+
+    double calYaw = atan2(vel[1],vel[0]);
+    if(calYaw < 0)
+        calYaw += M_PI*2;
+
+    QString message = "";
+    message.append(QString::number(robot.robotID));
+    message.append("$");
+    message.append(QString::number(bin[robot.robotID][1]));
+    message.append("&");
+    message.append(QString::number(bin[robot.robotID][2]));
+    message.append("$");
+    message.append(QString::number(bt[robot.robotID][1]));
+    message.append("&");
+    message.append(QString::number(bt[robot.robotID][2]));
+    message.append("$");
+    message.append(QString::number(radYaw));
+    message.append("&");
+    message.append(QString::number(calYaw));
+    message.append("<EOF>");
+
+    QByteArray byteArray = message.toUtf8();
+    socket->write(byteArray); //write the data itself
+    socket->waitForBytesWritten();
+    //socket->write(byteArray);
+    qDebug() << "written";
+    qDebug() << message;
 }
 
 // The odometry feedback from the robot (redundant)
