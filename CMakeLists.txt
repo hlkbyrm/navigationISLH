@@ -7,6 +7,7 @@ project(navigationISLH)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  geometry_msgs
   message_generation
 )
 
@@ -39,8 +40,12 @@ add_message_files(
   neighborInfo.msg
   networkInfo.msg
   robotInfo.msg
+  robotPose.msg
 )
-generate_messages()
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+)
 #uncomment if you have defined services
 #rosbuild_gensrv()
 

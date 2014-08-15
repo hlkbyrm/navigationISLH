@@ -54,12 +54,11 @@ void RosThread::work(){
     startNavigation = true;
 
     QString path = QDir::homePath();
-    path.append("/ISL_workspace/src/configNavISL.json");
+    path.append("/ISL_workspace/src/configISL.json");
 
     QString fileName = QDir::homePath();
     fileName.append("/ISL_workspace/src/pose.txt");
     poseFile.setFileName(fileName);
-
 
     if(!readConfigFile(path)){
         qDebug()<< "Read Config File Failed!!!";
@@ -74,6 +73,7 @@ void RosThread::work(){
     radYaw = 0.0;
     vel[0] = 0.0;
     vel[1] = 0.0;
+    isFinished = false;
 
     if(!ros::ok()){
 
@@ -87,33 +87,26 @@ void RosThread::work(){
     }
 
     emit rosStarted();
-
-    this->poseListSub = n.subscribe("pose_list",2,&RosThread::poseListCallback,this);
+    this->poseListSub = n.subscribe("pose_list",1,&RosThread::poseListCallback,this);
     //this->neighborInfoSubscriber = n.subscribe("communicationISL/neighborInfo",5,&RosThread::neighborInfoCallback,this);
     //this->turtlebotOdometrySubscriber = n.subscribe("odom",2,&RosThread::turtlebotOdometryCallback,this);
-    this->targetPoseListSub = n.subscribe("target_pose_list",2,&RosThread::targetPoseListCallback,this);
-    //this->turtlebotVelPublisher = n.advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity",1);
+    this->targetPoseListSub = n.subscribe("targetPoseList",2,&RosThread::targetPoseListCallback,this);
     //publisher değiştirildi safety controller eklendi. minimal launchera ek olarak safe_keyop.launch çalıştırılması gerekiyor
-    this->turtlebotVelPublisher = n.advertise<geometry_msgs::Twist>("/keyop_vel_smoother/raw_cmd_vel",1);
-    this->turtlebotGyroSub = n.subscribe("/mobile_base/sensors/imu_data",2,&RosThread::turtlebotGyroCallback,this);
-    this->turtlebotOdomSub = n.subscribe("/odom",2,&RosThread::turtlebotOdomCallback,this);
+    if(!isKobuki)
+        this->turtlebotVelPublisher = n.advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity",1);
+    else
+        this->turtlebotVelPublisher = n.advertise<geometry_msgs::Twist>("/keyop_vel_smoother/raw_cmd_vel",1);
+    this->turtlebotGyroSub = n.subscribe("/mobile_base/sensors/imu_data",1,&RosThread::turtlebotGyroCallback,this);
+    this->turtlebotOdomSub = n.subscribe("/odom",1,&RosThread::turtlebotOdomCallback,this);
     //this->amclInitialPosePublisher = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose",1,true);
     //this->coordinatorUpdatePublisher = n.advertise<navigationISLH::robotInfo>("navigationISLH/coordinatorUpdate",1,true);
 
-    if(feedbackToServer){
-        socket = new QTcpSocket(this);
-        socket->setReadBufferSize(0);
-        qDebug() << "Host IP is: " << IP;
-        socket->connectToHost(IP,11000);
-        if(socket->waitForConnected(5000)){
-            timer = n.createTimer(ros::Duration(0.25),&RosThread::timerTick,this);
-            timer.start();
-            qDebug()<<"Connected";
-        }
-        else
-            qDebug()<<"Error timeout";
-    }
+    this->robotPosePublisher = n.advertise<navigationISLH::robotPose>("robot_position_info",1,true);
 
+    if(feedbackToServer){
+        timer = n.createTimer(ros::Duration(0.25),&RosThread::timerTick,this);
+        timer.start();
+    }
 
     //this->robotinfoPublisher = n.advertise<navigationISLH::robotInfo>("navigationISLH/robotInfo",1);
     //ros::AsyncSpinner spinner(2);
@@ -130,7 +123,17 @@ void RosThread::work(){
     {
 
         if(startNavigation) {
-            NavigationController::robotContoller(vel, numOfRobots, /*obstacles.size()*/0, /*partDist*/0, bin, bt, b_rs, NULL, ro, kkLimits, robot.robotID);
+            std::vector<std::vector<double> > empty;
+            double notnormalized[1];
+            NavigationController::robotContoller(vel, notnormalized, numrobots, /*obstacles.size()*/0, /*partDist*/0, bin, bt, b_rs, empty, ro, kkLimits, robot.robotID);
+
+            qDebug()<<"notnormalized[0]"<<notnormalized[0];
+            qDebug()<<"vel[0]"<<vel[0]<<"vel[1]"<<vel[1];
+
+            /*if(notnormalized[0] < stoppingThreshold)
+                isFinished = true;
+            else
+                isFinished = false;*/
 
             this->sendVelocityCommand();
         }
@@ -228,7 +231,7 @@ void RosThread::turtlebotGyroCallback(const sensor_msgs::Imu::ConstPtr& msg)
     twist.angular.z = 0;
 
     velocityVector = twist;
-    if(fabs(robot.targetX-bin[robot.robotID][1]) <= distanceThreshold &&
+    if(isFinished && fabs(robot.targetX-bin[robot.robotID][1]) <= distanceThreshold &&
             fabs(robot.targetY-bin[robot.robotID][2]) <= distanceThreshold)
         return;
 
@@ -256,7 +259,7 @@ void RosThread::turtlebotGyroCallback(const sensor_msgs::Imu::ConstPtr& msg)
         turning = true;
         calculateTurn(calYaw,radYaw);
 
-        //qDebug() << "numOfRobots           : " << numOfRobots;
+        //qDebug() << "numrobots           : " << numrobots;
         //qDebug() << "robot.robotID         : " << robot.robotID;
         qDebug() << "bin[robot.RobotID][1] : " << bin[robot.robotID][1] << "[2] : " << bin[robot.robotID][2] << "[3] : " << bin[robot.robotID][3];
         qDebug() << "bt[robot.RobotID][1]  : " << bt[robot.robotID][1]  << "[2] : " << bt[robot.robotID][2];
@@ -269,16 +272,16 @@ void RosThread::turtlebotGyroCallback(const sensor_msgs::Imu::ConstPtr& msg)
     else
     {
         turning = false;
-        if(fabs(robot.targetX-bin[robot.robotID][1]) > distanceThreshold || fabs(robot.targetY-bin[robot.robotID][2]) > distanceThreshold){
+        if(/*!isFinished || */fabs(robot.targetX-bin[robot.robotID][1]) > distanceThreshold || fabs(robot.targetY-bin[robot.robotID][2]) > distanceThreshold){
            // qDebug()<<"Linear";
             velocityVector.linear.x = linearVelocity;
-            calculateTurn(calYaw,radYaw);
-            velocityVector.angular.z /= 2;
+            if((diff > angleThreshold/5*M_PI/180.0 && !turning))
+                calculateTurn(calYaw,radYaw);
         }
         else
             velocityVector.linear.x = 0;
 
-        //qDebug() << "numOfRobots           : " << numOfRobots;
+        //qDebug() << "numrobots           : " << numrobots;
         //qDebug() << "robot.robotID         : " << robot.robotID;
         qDebug() << "bin[robot.RobotID][1] : " << bin[robot.robotID][1] << "[2] : " << bin[robot.robotID][2] << "[3] : " << bin[robot.robotID][3];
         qDebug() << "bt[robot.RobotID][1]  : " << bt[robot.robotID][1]  << "[2] : " << bt[robot.robotID][2];
@@ -393,7 +396,7 @@ void RosThread::poseListCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
     twist.angular.z = 0;
 
     velocityVector = twist;
-    if(fabs(robot.targetX-bin[robot.robotID][1]) <= distanceThreshold &&
+    if(isFinished && fabs(robot.targetX-bin[robot.robotID][1]) <= distanceThreshold &&
             fabs(robot.targetY-bin[robot.robotID][2]) <= distanceThreshold)
         return;
 
@@ -412,7 +415,7 @@ void RosThread::poseListCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
         turning = true;
         calculateTurn(calYaw,radYaw);
 
-        //qDebug() << "numOfRobots           : " << numOfRobots;
+        //qDebug() << "numrobots           : " << numrobots;
         //qDebug() << "robot.robotID         : " << robot.robotID;
         qDebug() << "Mbin[robot.RobotID][1] : " << bin[robot.robotID][1] << "[2] : " << bin[robot.robotID][2] << "[3] : " << bin[robot.robotID][3];
         qDebug() << "bt[robot.RobotID][1]  : " << bt[robot.robotID][1]  << "[2] : " << bt[robot.robotID][2];
@@ -425,16 +428,16 @@ void RosThread::poseListCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
     else
     {
         turning = false;
-        if(fabs(robot.targetX-bin[robot.robotID][1]) > distanceThreshold || fabs(robot.targetY-bin[robot.robotID][2]) > distanceThreshold){
+        if(/*!isFinished || */fabs(robot.targetX-bin[robot.robotID][1]) > distanceThreshold || fabs(robot.targetY-bin[robot.robotID][2]) > distanceThreshold){
            // qDebug()<<"Linear";
             velocityVector.linear.x = linearVelocity;
-            calculateTurn(calYaw,radYaw);
-            velocityVector.angular.z /= 2;
+            if((diff > angleThreshold/5*M_PI/180.0 && !turning))
+                calculateTurn(calYaw,radYaw);
         }
         else
             velocityVector.linear.x = 0;
 
-        //qDebug() << "numOfRobots           : " << numOfRobots;
+        //qDebug() << "numrobots           : " << numrobots;
         //qDebug() << "robot.robotID         : " << robot.robotID;
         qDebug() << "Mbin[robot.RobotID][1] : " << bin[robot.robotID][1] << "[2] : " << bin[robot.robotID][2] << "[3] : " << bin[robot.robotID][3];
         qDebug() << "bt[robot.RobotID][1]  : " << bt[robot.robotID][1]  << "[2] : " << bt[robot.robotID][2];
@@ -475,13 +478,10 @@ bool RosThread::readConfigFile(QString filename)
 
         qDebug()<<result["numrobots"].toString();
 
-        //coordinatorUpdatePeriod = result["Tg"].toInt();
-
-        //qDebug()<<result["Tg"].toString();
-
-        //poseUpdatePeriod = result["Tc"].toInt();
-
-        //qDebug()<<result["Tc"].toString();
+        bin = std::vector<std::vector<double> >(numrobots+1,std::vector<double>(4));
+        bt = std::vector<std::vector<double> >(numrobots+1,std::vector<double>(3));
+        rr = std::vector<double>(numrobots+1);
+        b_rs = std::vector<std::vector<double> >(numrobots+1,std::vector<double>(4));
 
         this->robot.radius = result["radius"].toDouble();
 
@@ -489,13 +489,21 @@ bool RosThread::readConfigFile(QString filename)
 
         this->linearVelocity = result["linearVelocity"].toDouble();
 
+        qDebug()<<result["linearVelocity"].toDouble();
+
+        this->isKobuki = result["isKobuki"].toInt() == 1;
+
         this->angularVelocity = result["angularVelocity"].toDouble();
 
-        this->angleThreshold = result["angleTreshold"].toDouble();
+        this->angleThreshold = result["angleThreshold"].toDouble();
 
-        this->distanceThreshold = result["distanceTreshold"].toInt();
+        this->distanceThreshold = result["distanceThreshold"].toInt();
 
         qDebug()<<distanceThreshold;
+
+        this->stoppingThreshold = result["stoppingThreshold"].toDouble();
+
+        qDebug()<<stoppingThreshold;
 
         ro = result["ro"].toInt();
 
@@ -575,23 +583,17 @@ bool RosThread::readConfigFile(QString filename)
             bp[i+1][3] = obstacles[i].radius;
 
         }*/
-        for(int i = 1; i <= numOfRobots; i++)
+        for(int i = 1; i <= numrobots; i++)
         {
             if(i  != robot.robotID){
-
                 bin[i][1] = 0;
                 bin[i][2] = 0;
                 bin[i][3] = 0;
 
                 bt[i][1] = 0;
                 bt[i][2] = 0;
-
-
-
-
             }
             else{
-
                 bt[i][1] = robot.targetX;
                 bt[i][2] = robot.targetY;
             }
@@ -599,16 +601,14 @@ bool RosThread::readConfigFile(QString filename)
             b_rs[i][1] = 0;
             b_rs[i][2] = 0;
             b_rs[i][3] = 0;
-
         }
 
-
+        qDebug()<<"file read finished";
     }
     file.close();
+
+    qDebug()<<"DONE!!!";
     return true;
-
-
-
 }
 // Sends the velocity command to robot
 void RosThread::sendVelocityCommand() {
@@ -647,36 +647,25 @@ void RosThread::calculateTurn(double desired, double current) {
 
 }
 void RosThread::timerTick(const ros::TimerEvent&){
-    qDebug() << "entered";
+    navigationISLH::robotPose rp;
+
+    qDebug()<<"entered";
+
     if(!firstDataCame) return;
-    qDebug() << "writing";
 
     double calYaw = atan2(vel[1],vel[0]);
     if(calYaw < 0)
         calYaw += M_PI*2;
 
-    QString message = "";
-    message.append(QString::number(robot.robotID));
-    message.append("$");
-    message.append(QString::number(bin[robot.robotID][1]));
-    message.append("&");
-    message.append(QString::number(bin[robot.robotID][2]));
-    message.append("$");
-    message.append(QString::number(bt[robot.robotID][1]));
-    message.append("&");
-    message.append(QString::number(bt[robot.robotID][2]));
-    message.append("$");
-    message.append(QString::number(radYaw));
-    message.append("&");
-    message.append(QString::number(calYaw));
-    message.append("<EOF>");
+    rp.id = robot.robotID;
+    rp.position.x = bin[robot.robotID][1];
+    rp.position.y = bin[robot.robotID][2];
+    rp.target.x = bt[robot.robotID][1];
+    rp.target.y = bt[robot.robotID][2];
+    rp.calYaw = calYaw;
+    rp.radYaw = radYaw;
 
-    QByteArray byteArray = message.toUtf8();
-    socket->write(byteArray); //write the data itself
-    socket->waitForBytesWritten();
-    //socket->write(byteArray);
-    qDebug() << "written";
-    qDebug() << message;
+    this->robotPosePublisher.publish(rp);
 }
 
 // The odometry feedback from the robot (redundant)

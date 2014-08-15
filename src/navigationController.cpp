@@ -3,7 +3,7 @@
 
 
 // Alpha, Beta
-void NavigationController::fcn_A_B(int numOfRobots, int numOfParts, double partDist, mpfr_t A, mpfr_t B, double b_[][4], double bt_[][3],  double brs_[][4], double bp[][4], double ro, int rID)
+void NavigationController::fcn_A_B(int numOfRobots, int numOfParts, double partDist, mpfr_t A, mpfr_t B, std::vector<std::vector<double> > b_, std::vector<std::vector<double> > bt_,  std::vector<std::vector<double> > brs_, std::vector<std::vector<double> > bp, double ro, int rID)
 {
     //mpfr_t A, B;
     mpfr_t temp;
@@ -150,19 +150,19 @@ void NavigationController::fcn_A_B(int numOfRobots, int numOfParts, double partD
 
 
 
-void NavigationController::fcn_dAdx(mpfr_t dAdx, mpfr_rnd_t MPFR_RND, double b_[][4], double bt_[][3], int rID)
+void NavigationController::fcn_dAdx(mpfr_t dAdx, mpfr_rnd_t MPFR_RND, std::vector<std::vector<double> > b_, std::vector<std::vector<double> > bt_, int rID)
 {
     mpfr_set_d(dAdx, 2*(b_[rID][1]-bt_[rID][1]), MPFR_RND);
 }
 
 
-void NavigationController::fcn_dAdy(mpfr_t dAdy, mpfr_rnd_t MPFR_RND, double b_[][4], double bt_[][3], int rID)
+void NavigationController::fcn_dAdy(mpfr_t dAdy, mpfr_rnd_t MPFR_RND, std::vector<std::vector<double> > b_, std::vector<std::vector<double> > bt_, int rID)
 {
     mpfr_set_d(dAdy, 2*(b_[rID][2]-bt_[rID][2]), MPFR_RND);
 }
 
 
-void NavigationController::fcn_dBdx(int numOfRobots, int numOfParts, double partDist, mpfr_t dBdx, mpfr_t B, mpfr_rnd_t MPFR_RND, double b_[][4], double brs_[][4], double bp[][4], double ro, int rID)
+void NavigationController::fcn_dBdx(int numOfRobots, int numOfParts, double partDist, mpfr_t dBdx, mpfr_t B, mpfr_rnd_t MPFR_RND, std::vector<std::vector<double> > b_, std::vector<std::vector<double> > brs_, std::vector<std::vector<double> > bp, double ro, int rID)
 {
     mpfr_t temp;
     mpfr_init (temp);
@@ -210,7 +210,7 @@ void NavigationController::fcn_dBdx(int numOfRobots, int numOfParts, double part
     mpfr_clear (temp);
 }
 
-void NavigationController::fcn_dBdy(int numOfRobots, int numOfParts, double partDist, mpfr_t dBdy, mpfr_t B, mpfr_rnd_t MPFR_RND, double b_[][4], double brs_[][4], double bp[][4], double ro, int rID)
+void NavigationController::fcn_dBdy(int numOfRobots, int numOfParts, double partDist, mpfr_t dBdy, mpfr_t B, mpfr_rnd_t MPFR_RND, std::vector<std::vector<double> > b_, std::vector<std::vector<double> > brs_, std::vector<std::vector<double> > bp, double ro, int rID)
 {
     mpfr_t temp;
     mpfr_init (temp);
@@ -257,7 +257,7 @@ void NavigationController::fcn_dBdy(int numOfRobots, int numOfParts, double part
 }
 
 
-void NavigationController::fcn_dFdx(mpfr_t dFdx, mpfr_t A, mpfr_t B, int kk, int kq, mpfr_t dAdx, mpfr_t dBdx, mpfr_rnd_t MPFR_RND)
+void NavigationController::fcn_dFdx(mpfr_t dFdx, mpfr_t dQdx, mpfr_t A, mpfr_t B, int kk, int kq, mpfr_t dAdx, mpfr_t dBdx, mpfr_rnd_t MPFR_RND)
 {
 
     mpfr_t gammak, gammakB, temp, temp1, temp2, temp3, temp4, one, two, kk_m, kq_m, minusOne;
@@ -282,11 +282,10 @@ void NavigationController::fcn_dFdx(mpfr_t dFdx, mpfr_t A, mpfr_t B, int kk, int
     mpfr_set_d(kq_m, kq, MPFR_RND);
 
     /////  new ///
-    mpfr_t Q, dQdA, dQdB, dQdx;
+    mpfr_t Q, dQdA, dQdB;
     mpfr_init (Q);
     mpfr_init (dQdA);
     mpfr_init (dQdB);
-    mpfr_init (dQdx);
 
 
     // Q= Math.pow(A,Ak)/B;
@@ -391,11 +390,10 @@ void NavigationController::fcn_dFdx(mpfr_t dFdx, mpfr_t A, mpfr_t B, int kk, int
     mpfr_clear (Q);
     mpfr_clear (dQdA);
     mpfr_clear (dQdB);
-    mpfr_clear (dQdx);
 }
 
 
-void NavigationController::fcn_dFdy(mpfr_t dFdy, mpfr_t A, mpfr_t B, int kk, int kq, mpfr_t dAdy, mpfr_t dBdy, mpfr_rnd_t MPFR_RND)
+void NavigationController::fcn_dFdy(mpfr_t dFdy, mpfr_t dQdy, mpfr_t A, mpfr_t B, int kk, int kq, mpfr_t dAdy, mpfr_t dBdy, mpfr_rnd_t MPFR_RND)
 {
 //dFdy = (1/kq)*(Q/(Q+1))^((1/kq)-1)*(Q+1)^(-2)*dQdy;
 
@@ -426,11 +424,10 @@ void NavigationController::fcn_dFdy(mpfr_t dFdy, mpfr_t A, mpfr_t B, int kk, int
 
 
     /////  new ///
-    mpfr_t Q, dQdA, dQdB, dQdy;
+    mpfr_t Q, dQdA, dQdB;
     mpfr_init (Q);
     mpfr_init (dQdA);
     mpfr_init (dQdB);
-    mpfr_init (dQdy);
 
 
     // Q= Math.pow(A,Ak)/B;
@@ -537,11 +534,10 @@ void NavigationController::fcn_dFdy(mpfr_t dFdy, mpfr_t A, mpfr_t B, int kk, int
     mpfr_clear (Q);
     mpfr_clear (dQdA);
     mpfr_clear (dQdB);
-    mpfr_clear (dQdy);
 }
 
 
-void NavigationController::robotContoller(double bout[], int numOfRobots, int numOfParts, double partDist, double bin_[][4], double bt_[][3], double b_rs_[][4], double bp[][4], double ro, double kkLimits[], int rID)
+void NavigationController::robotContoller(double bout[], double boutnotnormalized[], int numOfRobots, int numOfParts, double partDist, std::vector<std::vector<double> > bin_, std::vector<std::vector<double> > bt_, std::vector<std::vector<double> > b_rs_, std::vector<std::vector<double> > bp, double ro, double kkLimits[], int rID)
 {
     mpfr_t A, B, dBdx, dBdy, dAdx, dAdy, dFdx, dFdy, norm, temp1, temp2,minusOne, two;
     mpfr_t logA_m, logB_m;// divlogBlogA;
@@ -631,8 +627,22 @@ void NavigationController::robotContoller(double bout[], int numOfRobots, int nu
     fcn_dBdy(numOfRobots, numOfParts, partDist, dBdy, B, MPFR_RND, bin_, b_rs_, bp, ro, rID);
 
 
-    fcn_dFdx(dFdx, A, B, kk, kq, dAdx, dBdx, MPFR_RND);
-    fcn_dFdy(dFdy, A, B, kk, kq, dAdy, dBdy, MPFR_RND);
+    /*fcn_dFdx(dFdx, A, B, kk, kq, dAdx, dBdx, MPFR_RND);
+    fcn_dFdy(dFdy, A, B, kk, kq, dAdy, dBdy, MPFR_RND);*/
+    mpfr_t dQdx,dQdy;
+    mpfr_init(dQdx);
+    mpfr_init(dQdy);
+
+    fcn_dFdx(dFdx, dQdx, A, B, kk, kq, dAdx, dBdx, MPFR_RND);
+    fcn_dFdy(dFdy, dQdy, A, B, kk, kq, dAdy, dBdy, MPFR_RND);
+
+    mpfr_set_d(two, 2.0, MPFR_RND);
+    mpfr_pow(temp1, dQdx, two, MPFR_RND);
+    mpfr_pow(temp2, dQdy, two, MPFR_RND);
+    mpfr_add(norm, temp1, temp2, MPFR_RND);
+    mpfr_sqrt(norm, norm, MPFR_RND);
+    mpfr_log10(norm, norm, MPFR_RND);
+    boutnotnormalized[0]  = mpfr_get_d(norm, MPFR_RND);
 /*
     printf("\n");
     mpfr_out_str (stdout, 10, 0, dFdx, MPFR_RND);
@@ -640,8 +650,6 @@ void NavigationController::robotContoller(double bout[], int numOfRobots, int nu
     mpfr_out_str (stdout, 10, 0, dFdy, MPFR_RND);
     printf("\n");
 */
-
-
     mpfr_set_d(two, 2.0, MPFR_RND);
     mpfr_pow(temp1, dFdx, two, MPFR_RND);
     mpfr_pow(temp2, dFdy, two, MPFR_RND);
@@ -655,6 +663,8 @@ void NavigationController::robotContoller(double bout[], int numOfRobots, int nu
     bout[0] = -1.0*mpfr_get_d(dFdx, MPFR_RND);
     bout[1] = -1.0*mpfr_get_d(dFdy, MPFR_RND);
 
+    mpfr_clear (dQdx);
+    mpfr_clear (dQdy);
     mpfr_clear (A);
     mpfr_clear (B);
     mpfr_clear (logA_m);
@@ -670,5 +680,4 @@ void NavigationController::robotContoller(double bout[], int numOfRobots, int nu
     mpfr_clear (temp2);
     mpfr_clear (minusOne);
     mpfr_clear (two);
-
 }

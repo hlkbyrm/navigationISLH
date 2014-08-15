@@ -8,6 +8,7 @@
 #include "navigationController.h"
 #include "navigationISLH/robotInfo.h"
 #include "navigationISLH/neighborInfo.h"
+#include "navigationISLH/robotPose.h"
 #include <QTimer>
 #include <QVector>
 #include <QThread>
@@ -17,9 +18,7 @@
 #include <QtNetwork/QtNetwork>
 #include <QXmlStreamReader>
 #include <QtCore/QByteArray>
-
-
-#define numOfRobots 2
+#include <vector>
 
 class Robot
 {
@@ -89,6 +88,8 @@ private:
 
      ros::Publisher turtlebotVelPublisher;
 
+     ros::Publisher robotPosePublisher;
+
      QTcpSocket* socket;
      ros::Timer timer;
 
@@ -120,13 +121,16 @@ private:
 
 
      double vel[2]; // velocity vector
-     double bin[numOfRobots+1][4];// positions including itself
-     double bt[numOfRobots+1][3]; // goal positions
-     double rr[numOfRobots+1]; // radii of the robots
-     double b_rs[numOfRobots+1][4]; // robots' positions within sensing range
+     std::vector<std::vector<double> > bin;
+     std::vector<std::vector<double> > bt;
+     std::vector<double> rr;
+     std::vector<std::vector<double> > b_rs;
      double ro;
      double kkLimits[2]; // upper and lower bounds of parameters in navigation function
      //double bp[5][4];
+     bool isKobuki;
+     double stoppingThreshold;
+     bool isFinished;
 
      double radYaw;
 
