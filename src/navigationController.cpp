@@ -537,7 +537,7 @@ void NavigationController::fcn_dFdy(mpfr_t dFdy, mpfr_t dQdy, mpfr_t A, mpfr_t B
 }
 
 
-void NavigationController::robotContoller(double bout[], double boutnotnormalized[], int numOfRobots, int numOfParts, double partDist, std::vector<std::vector<double> > bin_, std::vector<std::vector<double> > bt_, std::vector<std::vector<double> > b_rs_, std::vector<std::vector<double> > bp, double ro, double kkLimits[], int rID)
+void NavigationController::robotContoller(double bout[], double* boutLengthOfVel, int numOfRobots, int numOfParts, double partDist, std::vector<std::vector<double> > bin_, std::vector<std::vector<double> > bt_, std::vector<std::vector<double> > b_rs_, std::vector<std::vector<double> > bp, double ro, double kkLimits[], int rID)
 {
     mpfr_t A, B, dBdx, dBdy, dAdx, dAdy, dFdx, dFdy, norm, temp1, temp2,minusOne, two;
     mpfr_t logA_m, logB_m;// divlogBlogA;
@@ -642,7 +642,7 @@ void NavigationController::robotContoller(double bout[], double boutnotnormalize
     mpfr_add(norm, temp1, temp2, MPFR_RND);
     mpfr_sqrt(norm, norm, MPFR_RND);
     mpfr_log10(norm, norm, MPFR_RND);
-    boutnotnormalized[0]  = mpfr_get_d(norm, MPFR_RND);
+    *boutLengthOfVel  = mpfr_get_d(norm, MPFR_RND);
 /*
     printf("\n");
     mpfr_out_str (stdout, 10, 0, dFdx, MPFR_RND);

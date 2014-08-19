@@ -1,9 +1,10 @@
-
 #include <ros/ros.h>
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/Pose2D.h>
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
+#include <std_msgs/UInt8.h>
 #include <sensor_msgs/Imu.h>
 #include "navigationController.h"
 #include "navigationISLH/robotInfo.h"
@@ -28,92 +29,53 @@ public:
     double radius;
     double targetX;
     double targetY;
-    //double initialX;
-    //double initialY;
-
 };
-/*class Obstacle
-{
-public:
-    int id;
-    double radius;
-    double x;
-    double y;
-
-
-};*/
 
 class RosThread:public QObject
 {
     Q_OBJECT
 
 public:
-
     RosThread();
 
     Robot robot;
-
-    //QVector<Obstacle> obstacles;
-
-   // RosThread(int argc, char **argv, std::string nodeName);
 
 public:
 
      bool readConfigFile(QString filename);
 
 private:
-     bool shutdown;
-
-  //   navigationISL::robotInfo currentStatus;
-
      bool startNavigation;
+     bool targetReached;
 
      void startModule();
 
      ros::NodeHandle n;
 
      ros::Subscriber poseListSub;
-
      ros::Subscriber targetPoseListSub;
+     ros::Subscriber targetPoseSub;
      ros::Subscriber turtlebotGyroSub;
      ros::Subscriber turtlebotOdomSub;
-
-     //ros::Subscriber neighborInfoSubscriber;
-
      ros::Subscriber turtlebotOdometrySubscriber;
-
-     //ros::Publisher robotinfoPublisher;
-
-     //ros::Publisher coordinatorUpdatePublisher;
-
      ros::Publisher turtlebotVelPublisher;
-
      ros::Publisher robotPosePublisher;
+     ros::Publisher targetReachedPublisher;
+     ros::Publisher currentPosePublisher;
 
      QTcpSocket* socket;
      ros::Timer timer;
 
-     //ros::Publisher amclInitialPosePublisher;
-
      void poseListCallback(const geometry_msgs::PoseArray::ConstPtr &msg);
-
      void targetPoseListCallback(const geometry_msgs::PoseArray::ConstPtr &msg);
-
+     void targetPoseCallback(const geometry_msgs::Pose2D::ConstPtr &msg);
      void turtlebotOdometryCallback(const nav_msgs::Odometry::ConstPtr & msg);
-
      void turtlebotGyroCallback(const sensor_msgs::Imu::ConstPtr & msg);
-
      void turtlebotOdomCallback(const nav_msgs::Odometry::ConstPtr & msg);
-
-     //void neighborInfoCallback(navigationISLH::neighborInfo neighborInfo);
-
-     //void poseUpdate(const ros::TimerEvent&);
-
-     //void coordinatorUpdate(const ros::TimerEvent&);
 
      void robotContoller(double [], int , double [][4], double [][3], double [][4], double, double []);
 
-     void calculateTurn(double desired, double current);
+     void calculateTurn(double desired, double current, geometry_msgs::Twist *twist);
 
      void sendVelocityCommand();
 
@@ -127,17 +89,22 @@ private:
      std::vector<std::vector<double> > b_rs;
      double ro;
      double kkLimits[2]; // upper and lower bounds of parameters in navigation function
-     //double bp[5][4];
      bool isKobuki;
      double stoppingThreshold;
      bool isFinished;
+     bool turning; // Flag for not using camera data when turtlebot is turning
+     bool turning2;// Flag for not using camera data when turtlebot is turning
+     bool firstDataCame; // Flag for first data because we must not use gyro or odom before first data
+     ros::Time current_timeO, last_timeO; // Used for converting velocity to distance or angle
+     ros::Time current_timeG, last_timeG; // Used for converting velocity to distance or angle
+     u_int64_t lastPoseCallbackTime; //Used for correction of data from camera
+     double enSonAlinanYolX; //Used for correction of data from camera
+     double enSonAlinanYolY; //Used for correction of data from camera
+     double enSonDonulenAci; //Used for correction of data from camera
 
      double radYaw;
 
      QFile poseFile;
-
-     //int poseUpdatePeriod;
-     //int coordinatorUpdatePeriod;
 
      // The robot's angle threshold while rotating in degrees
      double angleThreshold;
@@ -153,25 +120,15 @@ private:
 
      int numrobots;
 
-     int partDist;
-
      bool feedbackToServer;
 
      QString IP;
-
-     // Pose update timer
-     //ros::Timer pt;
-
-     // Coordinator update timer
-     //ros::Timer ct;
 
      geometry_msgs::Twist velocityVector;
 
 public slots:
      void work();
-
      void shutdownROS();
-
 
 signals:
    void rosFinished();

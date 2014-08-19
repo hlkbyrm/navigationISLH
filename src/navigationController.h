@@ -29,7 +29,7 @@ public:
 
     static void fcn_dFdy(mpfr_t dFdy, mpfr_t dQdy, mpfr_t A, mpfr_t B, int kk, int kq, mpfr_t dAdy, mpfr_t dBdy, mpfr_rnd_t MPFR_RND);
 
-    static void robotContoller(double bout[],double boutnotnormalized[], int numOfRobots, int numOfParts, double partDist, std::vector<std::vector<double> > bin_, std::vector<std::vector<double> > bt_, std::vector<std::vector<double> > b_rs_, std::vector<std::vector<double> > bp, double ro, double kkLimits[], int rID);
+    static void robotContoller(double bout[],double* boutLengthOfVel, int numOfRobots, int numOfParts, double partDist, std::vector<std::vector<double> > bin_, std::vector<std::vector<double> > bt_, std::vector<std::vector<double> > b_rs_, std::vector<std::vector<double> > bp, double ro, double kkLimits[], int rID);
 
 
 
