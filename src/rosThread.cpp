@@ -274,6 +274,7 @@ void RosThread::poseListCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
     qDebug() << msg->poses[0].position.x*1000000000.0;
     qDebug() << newPoseCallbackTime - (msg->poses[0].position.x*1000000000.0);
     qDebug() << QString::number(msg->poses[0].position.x);
+    if(_diff2 < 0) _diff2 = 0;
     if(_diff1 != 0){
         qDebug() << "AddedToX: " << enSonAlinanYolX * _diff2 / _diff1 << " Y: " << enSonAlinanYolY * _diff2 / _diff1;
         qDebug() << "diff1: " << _diff1 << " 2: " << _diff2;
@@ -296,7 +297,7 @@ void RosThread::poseListCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
     if(!turning){
         if(!turning2){
             //if robot is not turning then get angle from main computer(msg)
-            radYaw = msg->poses[robot.robotID].position.z + enSonDonulenAci ;
+            radYaw = msg->poses[robot.robotID].position.z + enSonDonulenAci * (_diff1!=0?(_difff2/_diff1):0);
             qDebug() << "MRad yaw: " << radYaw;
             stream << "M ";
         }
