@@ -143,8 +143,6 @@ void RosThread::turtlebotOdomCallback(const nav_msgs::Odometry::ConstPtr & msg)
     qDebug() << "twist X: " << diffx << " +X: " << diffx*cos(radYaw) << " +Y: " << diffx*sin(radYaw);
     bin[robot.robotID][1] += diffx*cos(radYaw);
     bin[robot.robotID][2] += diffx*sin(radYaw);
-    enSonAlinanYolX += diffx*cos(radYaw);
-    enSonAlinanYolY += diffx*sin(radYaw);
     last_timeO = current_timeO;
 }
 //Use gyro data to correct angle between two poseListCallback
@@ -154,7 +152,6 @@ void RosThread::turtlebotGyroCallback(const sensor_msgs::Imu::ConstPtr& msg)
     current_timeG = ros::Time::now();
     qDebug() << "Gyro X:" << msg->angular_velocity.x << "Y:" << msg->angular_velocity.y << "Z:" << msg->angular_velocity.z;
     radYaw += msg->angular_velocity.z*((current_timeG - last_timeG).toSec());
-    enSonDonulenAci += msg->angular_velocity.z*((current_timeG - last_timeG).toSec());
     last_timeG = current_timeG;
 
     double calYaw = atan2(vel[1],vel[0]);
@@ -261,33 +258,6 @@ void RosThread::poseListCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
         }*/
     }
 
-    //Correct pose of our robot using gyro and odom
-    u_int64_t newPoseCallbackTime = ros::Time::now().toNSec();
-    ros::Time receivedTime;
-    //get time data of msg from first piece of msg
-    double d = msg->poses[0].position.x;
-    receivedTime.fromSec(d);
-    //time datas are using nanoseconds so convert them to milisecond
-    int _diff1 = (newPoseCallbackTime/1000000 - lastPoseCallbackTime/1000000);
-    int _diff2 = (newPoseCallbackTime/1000000 - (msg->poses[0].position.x*1000.0));
-    qDebug() << newPoseCallbackTime;
-    qDebug() << msg->poses[0].position.x*1000000000.0;
-    qDebug() << newPoseCallbackTime - (msg->poses[0].position.x*1000000000.0);
-    qDebug() << QString::number(msg->poses[0].position.x);
-    if(_diff2 < 0) _diff2 = 0;
-    if(_diff1 != 0){
-        qDebug() << "AddedToX: " << enSonAlinanYolX * _diff2 / _diff1 << " Y: " << enSonAlinanYolY * _diff2 / _diff1;
-        qDebug() << "diff1: " << _diff1 << " 2: " << _diff2;
-        if(_diff2 > _diff1) _diff1 = _diff2;
-        bin[robot.robotID][1] += enSonAlinanYolX * _diff2 / _diff1;
-        bin[robot.robotID][2] += enSonAlinanYolY * _diff2 / _diff1;
-    }
-
-    // reset correction data
-    enSonAlinanYolX = 0.0;
-    enSonAlinanYolY = 0.0;
-    lastPoseCallbackTime = newPoseCallbackTime;
-
     if(!poseFile.exists())
         poseFile.open(QFile::WriteOnly);
     else
@@ -297,13 +267,12 @@ void RosThread::poseListCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
     if(!turning){
         if(!turning2){
             //if robot is not turning then get angle from main computer(msg)
-            radYaw = msg->poses[robot.robotID].position.z + enSonDonulenAci * (_diff1!=0?(_difff2/_diff1):0);
+            radYaw = msg->poses[robot.robotID].position.z;
             qDebug() << "MRad yaw: " << radYaw;
             stream << "M ";
         }
         turning2 = false;
     }else turning2 = true;
-    enSonDonulenAci = 0.0;
     double calYaw = atan2(vel[1],vel[0]);
 
     if(calYaw < 0)
