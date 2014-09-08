@@ -97,10 +97,6 @@ private:
      bool firstDataCame; // Flag for first data because we must not use gyro or odom before first data
      ros::Time current_timeO, last_timeO; // Used for converting velocity to distance or angle
      ros::Time current_timeG, last_timeG; // Used for converting velocity to distance or angle
-     u_int64_t lastPoseCallbackTime; //Used for correction of data from camera
-     double enSonAlinanYolX; //Used for correction of data from camera
-     double enSonAlinanYolY; //Used for correction of data from camera
-     double enSonDonulenAci; //Used for correction of data from camera
 
      double radYaw;
 
