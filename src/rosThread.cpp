@@ -239,7 +239,6 @@ void RosThread::poseListCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
 {
     // If its first data then reset time variables
     if(!firstDataCame) {
-        lastPoseCallbackTime = ros::Time::now().toNSec();
         current_timeG = ros::Time::now();
         last_timeG = ros::Time::now();
         current_timeO = ros::Time::now();
