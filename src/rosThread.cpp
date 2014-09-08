@@ -21,9 +21,6 @@ void RosThread::work(){
     turning = false;
     turning2 = false;
     firstDataCame =false;
-    enSonAlinanYolX = 0.0;
-    enSonAlinanYolY = 0.0;
-    enSonDonulenAci = 0.0;
     velocityVector.linear.x = 0.0;
     radYaw = 0.0;
     vel[0] = 0.0;
