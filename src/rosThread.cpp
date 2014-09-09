@@ -67,10 +67,8 @@ void RosThread::work(){
     this->currentPosePublisher = n.advertise<geometry_msgs::Pose2D>("currentPose",1,true);
 
     //Send robot pose and target info 4 times each second
-    if(feedbackToServer){
-        timer = n.createTimer(ros::Duration(0.25),&RosThread::timerTick,this);
-        timer.start();
-    }
+    timer = n.createTimer(ros::Duration(0.25),&RosThread::timerTick,this);
+    timer.start();
 
     ros::Rate loop(10);
 
@@ -475,25 +473,27 @@ void RosThread::calculateTurn(double desired, double current, geometry_msgs::Twi
 }
 // publish position of robot and target of robot to monitoringISLH
 void RosThread::timerTick(const ros::TimerEvent&){
-    navigationISLH::robotPose rp;
-
-    qDebug()<<"entered";
-
-    if(!firstDataCame) return;
-
-    double calYaw = atan2(vel[1],vel[0]);
-    if(calYaw < 0)
-        calYaw += M_PI*2;
-
-    rp.id = robot.robotID;
-    rp.position.x = bin[robot.robotID][1];
-    rp.position.y = bin[robot.robotID][2];
-    rp.target.x = bt[robot.robotID][1];
-    rp.target.y = bt[robot.robotID][2];
-    rp.calYaw = calYaw;
-    rp.radYaw = radYaw;
-
-    this->robotPosePublisher.publish(rp);
+    if(feedbackToServer){
+        navigationISLH::robotPose rp;
+    
+        qDebug()<<"entered";
+    
+        if(!firstDataCame) return;
+    
+        double calYaw = atan2(vel[1],vel[0]);
+        if(calYaw < 0)
+            calYaw += M_PI*2;
+    
+        rp.id = robot.robotID;
+        rp.position.x = bin[robot.robotID][1];
+        rp.position.y = bin[robot.robotID][2];
+        rp.target.x = bt[robot.robotID][1];
+        rp.target.y = bt[robot.robotID][2];
+        rp.calYaw = calYaw;
+        rp.radYaw = radYaw;
+    
+        this->robotPosePublisher.publish(rp);
+    }
 
     geometry_msgs::Pose2D pose;
     pose.x = bin[robot.robotID][1];
