@@ -68,7 +68,7 @@ private:
      ros::Timer timer;
 
      void poseListCallback(const geometry_msgs::PoseArray::ConstPtr &msg);
-     void targetPoseListCallback(const geometry_msgs::PoseArray::ConstPtr &msg);
+     void targetPoseListCallback(const ISLH_msgs::targetPoseListMessage::ConstPtr &msg);
      void targetPoseCallback(const geometry_msgs::Pose2D::ConstPtr &msg);
      void turtlebotOdometryCallback(const nav_msgs::Odometry::ConstPtr & msg);
      void turtlebotGyroCallback(const sensor_msgs::Imu::ConstPtr & msg);

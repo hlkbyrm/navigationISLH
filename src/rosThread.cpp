@@ -110,9 +110,9 @@ void RosThread::shutdownROS()
 }
 //Get targets of all robots
 void RosThread::targetPoseListCallback(const ISLH_msgs::targetPoseListMessage::ConstPtr& msg){
-    for(int i=0;i<msg->poses.size();i++){
-        bt[msg->robotIDs[i]][1] = msg->poses[i].position.x;
-        bt[msg->robotIDs[i]][2] = msg->poses[i].position.y;
+    for(int i=0;i<msg->targetPoses.size();i++){
+        bt[msg->robotIDs[i]][1] = msg->targetPoses[i].x;
+        bt[msg->robotIDs[i]][2] = msg->targetPoses[i].y;
     }
 
     robot.targetX = bt[robot.robotID][1];
