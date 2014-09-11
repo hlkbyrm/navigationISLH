@@ -8,7 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   geometry_msgs
-  message_generation
+  ISLH_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -31,28 +31,10 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-#uncomment if you have defined messages
-add_message_files(
-  DIRECTORY msg
-  FILES
-  helpMessage.msg
-  hotspot.msg
-  neighborInfo.msg
-  networkInfo.msg
-  robotInfo.msg
-  robotPose.msg
-)
-generate_messages(
-  DEPENDENCIES
-  geometry_msgs
-)
-#uncomment if you have defined services
-#rosbuild_gensrv()
-
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES navigationISL
-  CATKIN_DEPENDS message_runtime #roscpp std_msgs
+  CATKIN_DEPENDS ISLH_msgs #roscpp std_msgs
 #  DEPENDS bullet
 )
 include_directories(

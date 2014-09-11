@@ -52,9 +52,9 @@ void RosThread::work(){
     }
 
     emit rosStarted();
-    this->poseListSub = n.subscribe("pose_list",1,&RosThread::poseListCallback,this);
-    this->targetPoseListSub = n.subscribe("targetPoseList",2,&RosThread::targetPoseListCallback,this);
-    this->targetPoseSub = n.subscribe("targetPose",2,&RosThread::targetPoseCallback,this);
+    this->poseListSub = n.subscribe("localizationISLH/pose_list",1,&RosThread::poseListCallback,this);
+    this->targetPoseListSub = n.subscribe("messageDecoderISLH/targetPoseList",2,&RosThread::targetPoseListCallback,this);
+    this->targetPoseSub = n.subscribe("taskHandlerISLH/targetPose",2,&RosThread::targetPoseCallback,this);
     //publisher değiştirildi safety controller eklendi. minimal launchera ek olarak safe_keyop.launch çalıştırılması gerekiyor
     if(!isKobuki)
         this->turtlebotVelPublisher = n.advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity",1);
@@ -62,9 +62,9 @@ void RosThread::work(){
         this->turtlebotVelPublisher = n.advertise<geometry_msgs::Twist>("/keyop_vel_smoother/raw_cmd_vel",1);
     this->turtlebotGyroSub = n.subscribe("/mobile_base/sensors/imu_data",1,&RosThread::turtlebotGyroCallback,this);
     this->turtlebotOdomSub = n.subscribe("/odom",1,&RosThread::turtlebotOdomCallback,this);
-    this->robotPosePublisher = n.advertise<navigationISLH::robotPose>("robot_position_info",1,true);
-    this->targetReachedPublisher = n.advertise<std_msgs::UInt8>("targetReached",1,true);
-    this->currentPosePublisher = n.advertise<geometry_msgs::Pose2D>("currentPose",1,true);
+    this->robotPosePublisher = n.advertise<ISLH_msgs::robotPose>("robot_position_info",1,true);
+    this->targetReachedPublisher = n.advertise<std_msgs::UInt8>("navigationISLH/targetReached",1,true);
+    this->currentPosePublisher = n.advertise<geometry_msgs::Pose2D>("navigationISLH/currentPose",1,true);
 
     //Send robot pose and target info 4 times each second
     timer = n.createTimer(ros::Duration(0.25),&RosThread::timerTick,this);
@@ -474,7 +474,7 @@ void RosThread::calculateTurn(double desired, double current, geometry_msgs::Twi
 // publish position of robot and target of robot to monitoringISLH
 void RosThread::timerTick(const ros::TimerEvent&){
     if(feedbackToServer){
-        navigationISLH::robotPose rp;
+        ISLH_msgs::robotPose rp;
     
         qDebug()<<"entered";
     

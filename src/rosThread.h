@@ -7,9 +7,9 @@
 #include <std_msgs/UInt8.h>
 #include <sensor_msgs/Imu.h>
 #include "navigationController.h"
-#include "navigationISLH/robotInfo.h"
-#include "navigationISLH/neighborInfo.h"
-#include "navigationISLH/robotPose.h"
+#include "ISLH_msgs/robotInfo.h"
+#include "ISLH_msgs/neighborInfo.h"
+#include "ISLH_msgs/robotPose.h"
 #include <QTimer>
 #include <QVector>
 #include <QThread>
