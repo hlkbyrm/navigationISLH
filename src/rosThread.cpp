@@ -109,16 +109,14 @@ void RosThread::shutdownROS()
     ros::shutdown();
 }
 //Get targets of all robots
-void RosThread::targetPoseListCallback(const geometry_msgs::PoseArray::ConstPtr& msg){
+void RosThread::targetPoseListCallback(const ISLH_msgs::targetPoseListMessage::ConstPtr& msg){
     for(int i=0;i<msg->poses.size();i++){
-        bt[i+1][1] = msg->poses[i].position.x;
-        bt[i+1][2] = msg->poses[i].position.y;
+        bt[msg->robotIDs[i]][1] = msg->poses[i].position.x;
+        bt[msg->robotIDs[i]][2] = msg->poses[i].position.y;
     }
 
     robot.targetX = bt[robot.robotID][1];
     robot.targetY = bt[robot.robotID][2];
-
-    qDebug() << "TargetX: " << bt[robot.robotID][1] << " Y: " << bt[robot.robotID][2];
 }
 //Get target of robot
 void RosThread::targetPoseCallback(const geometry_msgs::Pose2D::ConstPtr &msg){
@@ -128,6 +126,8 @@ void RosThread::targetPoseCallback(const geometry_msgs::Pose2D::ConstPtr &msg){
     bt[robot.robotID][2] = msg->y;
     robot.targetX = msg->x;
     robot.targetY = msg->y;
+
+    qDebug() << "TargetX: " << bt[robot.robotID][1] << " Y: " << bt[robot.robotID][2];
 }
 //Use odom data to correct position between two poseListCallback
 void RosThread::turtlebotOdomCallback(const nav_msgs::Odometry::ConstPtr & msg)
