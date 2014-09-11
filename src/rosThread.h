@@ -10,6 +10,7 @@
 #include "ISLH_msgs/robotInfo.h"
 #include "ISLH_msgs/neighborInfo.h"
 #include "ISLH_msgs/robotPose.h"
+#include "ISLH_msgs/targetPoseListMessage.h"
 #include <QTimer>
 #include <QVector>
 #include <QThread>
