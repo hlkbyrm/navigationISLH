@@ -52,6 +52,7 @@ private:
      ros::NodeHandle n;
 
      ros::Subscriber poseListSub;
+     ros::Subscriber navigationOKSub;
      ros::Subscriber targetPoseListSub;
      ros::Subscriber targetPoseSub;
      ros::Subscriber turtlebotGyroSub;
@@ -66,6 +67,7 @@ private:
      ros::Timer timer;
 
      void poseListCallback(const geometry_msgs::PoseArray::ConstPtr &msg);
+     void navigationOKCallback(const std_msgs::UInt8::ConstPtr &msg);
      void targetPoseListCallback(const ISLH_msgs::targetPoseListMessage::ConstPtr &msg);
      void targetPoseCallback(const geometry_msgs::Pose2D::ConstPtr &msg);
      void turtlebotOdometryCallback(const nav_msgs::Odometry::ConstPtr & msg);
@@ -94,6 +96,7 @@ private:
      bool turning; // Flag for not using camera data when turtlebot is turning
      bool turning2;// Flag for not using camera data when turtlebot is turning
      bool firstDataCame; // Flag for first data because we must not use gyro or odom before first data
+     bool firstTargetCame; // Flag for first target because we must not start navigating before first target
      ros::Time current_timeO, last_timeO; // Used for converting velocity to distance or angle
      ros::Time current_timeG, last_timeG; // Used for converting velocity to distance or angle
 

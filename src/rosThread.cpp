@@ -53,6 +53,7 @@ void RosThread::work(){
 
     emit rosStarted();
     this->poseListSub = n.subscribe("localizationISLH/pose_list",1,&RosThread::poseListCallback,this);
+    this->navigationOKSub = n.subscribe("taskHandlerISLH/navigationOK",2,&RosThread::navigationOKCallback,this);
     this->targetPoseListSub = n.subscribe("messageDecoderISLH/targetPoseList",2,&RosThread::targetPoseListCallback,this);
     this->targetPoseSub = n.subscribe("taskHandlerISLH/targetPose",2,&RosThread::targetPoseCallback,this);
     //publisher değiştirildi safety controller eklendi. minimal launchera ek olarak safe_keyop.launch çalıştırılması gerekiyor
@@ -74,7 +75,7 @@ void RosThread::work(){
 
     while(ros::ok())
     {
-        if(startNavigation) {
+        if(startNavigation && firstTargetCame) {
             // Use empty vector for obstacles. Because we don't have any obstacles
             std::vector<std::vector<double> > empty;
             double lengthOfVel;
@@ -108,6 +109,12 @@ void RosThread::shutdownROS()
 {
     ros::shutdown();
 }
+void RosThread::navigationOKCallback(const std_msgs::UInt8::ConstPtr &msg){
+    if(msg->data == 0)
+        startNavigation = false;
+    else
+        startNavigation = true;
+}
 //Get targets of all robots
 void RosThread::targetPoseListCallback(const ISLH_msgs::targetPoseListMessage::ConstPtr& msg){
     for(int i=0;i<msg->targetPoses.size();i++){
@@ -120,7 +127,7 @@ void RosThread::targetPoseListCallback(const ISLH_msgs::targetPoseListMessage::C
 }
 //Get target of robot
 void RosThread::targetPoseCallback(const geometry_msgs::Pose2D::ConstPtr &msg){
-    startNavigation = true;
+    firstTargetCame = true;
     targetReached = false;
     bt[robot.robotID][1] = msg->x;
     bt[robot.robotID][2] = msg->y;
