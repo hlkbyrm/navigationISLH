@@ -52,7 +52,7 @@ void RosThread::work(){
     }
 
     emit rosStarted();
-    this->poseListSub = n.subscribe("localizationISLH/pose_list",1,&RosThread::poseListCallback,this);
+    this->poseListSub = n.subscribe("localizationISLH/poseList",1,&RosThread::poseListCallback,this);
     this->navigationOKSub = n.subscribe("taskHandlerISLH/navigationOK",2,&RosThread::navigationOKCallback,this);
     this->targetPoseListSub = n.subscribe("messageDecoderISLH/targetPoseList",2,&RosThread::targetPoseListCallback,this);
     this->targetPoseSub = n.subscribe("taskHandlerISLH/targetPose",2,&RosThread::targetPoseCallback,this);
@@ -237,7 +237,7 @@ void RosThread::turtlebotGyroCallback(const sensor_msgs::Imu::ConstPtr& msg)
     velocityVector = twist;
 }
 //Get pose data from main computer and correct the data using odom and gyro
-void RosThread::poseListCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
+void RosThread::poseListCallback(const ISLH_msgs::robotPositions::ConstPtr& msg)
 {
     // If its first data then reset time variables
     if(!firstDataCame) {
@@ -249,14 +249,10 @@ void RosThread::poseListCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
     firstDataCame = true;
 
     //change pose datas of robots
-    for(int i=1;i<msg->poses.size();i++){
-        bin[i][1] = msg->poses[i].position.x;
-        bin[i][2] = msg->poses[i].position.y;
-        bin[i][3] = robot.radius;
-        /*if(i != robot.robotID){
-            bt[i][1] = bin[i][1];
-            bt[i][2] = bin[i][2];
-        }*/
+    for(int i=0;i<msg->positions.size();i++){
+        bin[i+1][1] = msg->positions[i].x;
+        bin[i+1][2] = msg->positions[i].y;
+        bin[i+1][3] = robot.radius;
     }
 
     if(!poseFile.exists())
@@ -268,7 +264,7 @@ void RosThread::poseListCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
     if(!turning){
         if(!turning2){
             //if robot is not turning then get angle from main computer(msg)
-            radYaw = msg->poses[robot.robotID].position.z;
+            radYaw = msg->directions[robot.robotID-1];
             qDebug() << "MRad yaw: " << radYaw;
             stream << "M ";
         }
@@ -297,9 +293,9 @@ void RosThread::poseListCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
     if(isFinished && fabs(robot.targetX-bin[robot.robotID][1]) <= distanceThreshold &&
             fabs(robot.targetY-bin[robot.robotID][2]) <= distanceThreshold){
         if(!targetReached){
-            std_msgs::UInt8 msg;
-            msg.data = 1;
-            targetReachedPublisher.publish(msg);
+            std_msgs::UInt8 _msg;
+            _msg.data = 1;
+            targetReachedPublisher.publish(_msg);
             targetReached = true;
         }
         velocityVector = twist;

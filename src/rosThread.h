@@ -8,6 +8,7 @@
 #include <sensor_msgs/Imu.h>
 #include "navigationController.h"
 #include "ISLH_msgs/robotPose.h"
+#include "ISLH_msgs/robotPositions.h"
 #include "ISLH_msgs/targetPoseListMessage.h"
 #include <QTimer>
 #include <QVector>
@@ -66,7 +67,7 @@ private:
      QTcpSocket* socket;
      ros::Timer timer;
 
-     void poseListCallback(const geometry_msgs::PoseArray::ConstPtr &msg);
+     void poseListCallback(const ISLH_msgs::robotPositions::ConstPtr &msg);
      void navigationOKCallback(const std_msgs::UInt8::ConstPtr &msg);
      void targetPoseListCallback(const ISLH_msgs::targetPoseListMessage::ConstPtr &msg);
      void targetPoseCallback(const geometry_msgs::Pose2D::ConstPtr &msg);
