@@ -55,6 +55,7 @@ private:
      ros::Subscriber poseListSub;
      ros::Subscriber navigationOKSub;
      ros::Subscriber targetPoseListSub;
+     ros::Subscriber targetPoseListFromMonitoringSub;
      ros::Subscriber targetPoseSub;
      ros::Subscriber turtlebotGyroSub;
      ros::Subscriber turtlebotOdomSub;
