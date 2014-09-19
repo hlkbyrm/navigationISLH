@@ -14,6 +14,7 @@ void RosThread::startModule()
 }
 void RosThread::work(){
     startNavigation = false;
+    firstTargetCame = false;
     //it will be false when first target came
     targetReached = true;
 
