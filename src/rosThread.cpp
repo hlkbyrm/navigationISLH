@@ -373,9 +373,9 @@ bool RosThread::readConfigFile(QString filename)
         rr = std::vector<double>(numrobots+1);
         b_rs = std::vector<std::vector<double> >(numrobots+1,std::vector<double>(4));
 
-        this->robot.radius = result["radius"].toDouble();
+        this->robot.radius = result["robotRadius"].toDouble();
 
-        qDebug()<<result["radius"].toString();
+        qDebug()<<result["robotRadius"].toString();
 
         this->linearVelocity = result["linearVelocity"].toDouble();
 
