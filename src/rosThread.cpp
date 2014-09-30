@@ -54,7 +54,7 @@ void RosThread::work(){
 
     emit rosStarted();
     this->poseListSub = n.subscribe("localizationISLH/poseList",1,&RosThread::poseListCallback,this);
-    this->navigationOKSub = n.subscribe("taskHandlerISLH/navigationOK",2,&RosThread::navigationOKCallback,this);
+    this->navigationOKSub = n.subscribe("taskHandlerISLH/navigationOK",queueSize,&RosThread::navigationOKCallback,this);
     this->targetPoseListSub = n.subscribe("messageDecoderISLH/targetPoseList",2,&RosThread::targetPoseListCallback,this);
     this->targetPoseListFromMonitoringSub = n.subscribe("monitoringISLH/targetPoseList",2,&RosThread::targetPoseListCallback,this);
     this->targetPoseSub = n.subscribe("taskHandlerISLH/targetPose",2,&RosThread::targetPoseCallback,this);
@@ -65,8 +65,8 @@ void RosThread::work(){
         this->turtlebotVelPublisher = n.advertise<geometry_msgs::Twist>("/keyop_vel_smoother/raw_cmd_vel",1);
     this->turtlebotGyroSub = n.subscribe("/mobile_base/sensors/imu_data",1,&RosThread::turtlebotGyroCallback,this);
     this->turtlebotOdomSub = n.subscribe("/odom",1,&RosThread::turtlebotOdomCallback,this);
-    this->robotPosePublisher = n.advertise<ISLH_msgs::robotPose>("navigationISLH/robotPositionInfo",1,true);
-    this->targetReachedPublisher = n.advertise<std_msgs::UInt8>("navigationISLH/targetReached",1,true);
+    this->robotPosePublisher = n.advertise<ISLH_msgs::robotPose>("navigationISLH/robotPositionInfo",queueSize,true);
+    this->targetReachedPublisher = n.advertise<std_msgs::UInt8>("navigationISLH/targetReached",queueSize,true);
     this->currentPosePublisher = n.advertise<geometry_msgs::Pose2D>("navigationISLH/currentPose",1,true);
 
     //Send robot pose and target info 4 times each second
@@ -421,6 +421,9 @@ bool RosThread::readConfigFile(QString filename)
 
         int iscoord =   result["iscoordinator"].toInt();
         if(iscoord == 1) this->robot.isCoordinator = true;
+
+        queueSize = result["queueSize"].toInt();
+        qDebug()<<result["queueSize"].toString();
 
         this->robot.targetX = result["targetX"].toDouble();
 

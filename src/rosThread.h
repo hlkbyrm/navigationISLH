@@ -120,6 +120,8 @@ private:
 
      int numrobots;
 
+     int queueSize;
+
      bool feedbackToServer;
 
      QString IP;
