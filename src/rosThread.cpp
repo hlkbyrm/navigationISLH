@@ -419,8 +419,8 @@ bool RosThread::readConfigFile(QString filename)
 
         qDebug() << "IP: " << IP;
 
-        int iscoord =   result["iscoordinator"].toInt();
-        if(iscoord == 1) this->robot.isCoordinator = true;
+        int coordinatorRobotID =   result["taskCoordinatorRobotID"].toInt();
+        if(coordinatorRobotID == robot.robotID) this->robot.isCoordinator = true;
 
         queueSize = result["queueSize"].toInt();
         qDebug()<<result["queueSize"].toString();
