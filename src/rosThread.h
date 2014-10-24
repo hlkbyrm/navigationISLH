@@ -82,6 +82,8 @@ private:
 
      void sendVelocityCommand();
 
+     std::vector<std::vector<double> > findRobotsInRange();
+
      void timerTick(const ros::TimerEvent&);
 
 
@@ -90,7 +92,8 @@ private:
      std::vector<std::vector<double> > bt;
      std::vector<double> rr;
      std::vector<std::vector<double> > b_rs;
-     double ro;
+     double ro; // workspace radius
+     double rs; // sensing range
      double kkLimits[2]; // upper and lower bounds of parameters in navigation function
      bool isKobuki;
      double stoppingThreshold;

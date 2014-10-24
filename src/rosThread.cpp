@@ -78,10 +78,14 @@ void RosThread::work(){
     while(ros::ok())
     {
         if(startNavigation && firstTargetCame) {
-            // Use empty vector for obstacles. Because we don't have any obstacles
+            // Use empty vector for obstacles since we don't have any obstacles
             std::vector<std::vector<double> > empty;
             double lengthOfVel;
-            NavigationController::robotContoller(vel, &lengthOfVel, numrobots, 0, 0, bin, bt, b_rs, empty, ro, kkLimits, robot.robotID);
+
+            std::vector<std::vector<double> > bin_;
+            bin_ = findRobotsInRange();
+
+            NavigationController::robotContoller(vel, &lengthOfVel, numrobots, 0, 0, bin_, bt, b_rs, empty, ro, kkLimits, robot.robotID);
 
             qDebug()<<"lengthOfVel: "<<lengthOfVel;
             qDebug()<<"vel[0]"<<vel[0]<<"vel[1]"<<vel[1];
@@ -111,6 +115,31 @@ void RosThread::shutdownROS()
 {
     ros::shutdown();
 }
+// find the robots in its range. These robots are taken into account in the navigation controller
+std::vector<std::vector<double> >  RosThread::findRobotsInRange()
+{
+
+    std::vector<std::vector<double> > bin_;
+
+    bin_ = std::vector<std::vector<double> >(numrobots+1,std::vector<double>(4));
+
+    int myRID = robot.robotID;
+    for(int rID=1;rID<=numrobots;rID++)
+    {
+        bin_[rID][1] = bin[rID][1];
+        bin_[rID][2] = bin[rID][2];
+        bin_[rID][3] = bin[rID][3];
+
+        double dist = sqrt((bin[myRID][1]-bin[rID][1])*(bin[myRID][1]-bin[rID][1]) + (bin[myRID][2]-bin[rID][2])*(bin[myRID][2]-bin[rID][2]));
+
+        if (dist>rs)
+            bin_[rID][3] = 0;
+    }
+
+    return bin_;
+
+}
+
 void RosThread::navigationOKCallback(const std_msgs::UInt8::ConstPtr &msg){
     if(msg->data == 0)
         startNavigation = false;
@@ -175,8 +204,8 @@ void RosThread::turtlebotGyroCallback(const sensor_msgs::Imu::ConstPtr& msg)
     twist.angular.z = 0;
 
     //if we reached to our target send targetReached message and return from function
-    if(isFinished && fabs(robot.targetX-bin[robot.robotID][1]) <= distanceThreshold &&
-            fabs(robot.targetY-bin[robot.robotID][2]) <= distanceThreshold){
+    double dist2Target = sqrt((robot.targetX-bin[robot.robotID][1])*(robot.targetX-bin[robot.robotID][1]) + (robot.targetY-bin[robot.robotID][2])*(robot.targetY-bin[robot.robotID][2]));
+    if(isFinished && dist2Target <= distanceThreshold){
         if(!targetReached){
             std_msgs::UInt8 msg;
             msg.data = 1;
@@ -221,7 +250,8 @@ void RosThread::turtlebotGyroCallback(const sensor_msgs::Imu::ConstPtr& msg)
     {
         turning = false;
         // if robot is not at target position then continue
-        if(!isFinished || fabs(robot.targetX-bin[robot.robotID][1]) > distanceThreshold || fabs(robot.targetY-bin[robot.robotID][2]) > distanceThreshold){
+        double dist2Target = sqrt((robot.targetX-bin[robot.robotID][1])*(robot.targetX-bin[robot.robotID][1]) + (robot.targetY-bin[robot.robotID][2])*(robot.targetY-bin[robot.robotID][2]));
+        if(!isFinished || dist2Target > distanceThreshold){
             twist.linear.x = linearVelocity;
             // if robots direction is not correct then fix it
             if((diff > angleThreshold/5*M_PI/180.0 && !turning))
@@ -292,8 +322,8 @@ void RosThread::poseListCallback(const ISLH_msgs::robotPositions::ConstPtr& msg)
     twist.angular.z = 0;
 
     //if we reached to our target send targetReached msg and return from function
-    if(isFinished && fabs(robot.targetX-bin[robot.robotID][1]) <= distanceThreshold &&
-            fabs(robot.targetY-bin[robot.robotID][2]) <= distanceThreshold){
+    double dist2Target = sqrt((robot.targetX-bin[robot.robotID][1])*(robot.targetX-bin[robot.robotID][1]) + (robot.targetY-bin[robot.robotID][2])*(robot.targetY-bin[robot.robotID][2]));
+    if(isFinished && dist2Target <= distanceThreshold){
         if(!targetReached){
             std_msgs::UInt8 _msg;
             _msg.data = 1;
@@ -329,7 +359,8 @@ void RosThread::poseListCallback(const ISLH_msgs::robotPositions::ConstPtr& msg)
     {
         turning = false;
         // if robot is not at target position then continue
-        if(!isFinished || fabs(robot.targetX-bin[robot.robotID][1]) > distanceThreshold || fabs(robot.targetY-bin[robot.robotID][2]) > distanceThreshold){
+        double dist2Target = sqrt((robot.targetX-bin[robot.robotID][1])*(robot.targetX-bin[robot.robotID][1]) + (robot.targetY-bin[robot.robotID][2])*(robot.targetY-bin[robot.robotID][2]));
+        if(!isFinished || dist2Target > distanceThreshold){
             twist.linear.x = linearVelocity;
             // if robots direction is not correct then fix it
             if((diff > angleThreshold/5*M_PI/180.0 && !turning))
@@ -395,9 +426,12 @@ bool RosThread::readConfigFile(QString filename)
 
         qDebug()<<stoppingThreshold;
 
-        ro = result["ro"].toInt();
+        //ro = result["ro"].toInt();
+        ro = result["ro4Navigation"].toDouble();
 
-        qDebug()<<ro;
+        qDebug()<<"ro4Navigation: "<<ro;
+
+        rs = result["rs"].toDouble();
 
         kkLimits[0] = result["kMin"].toInt();
 
