@@ -96,6 +96,7 @@ private:
      double rs; // sensing range
      double kkLimits[2]; // upper and lower bounds of parameters in navigation function
      bool isKobuki;
+     bool isSafety; // turtlebot-I (IRobot) does not have any safety controller in Hydro. Hence we use own safety controller Whose topic is /raw_velocity
      double stoppingThreshold;
      bool isFinished;
      bool turning; // Flag for not using camera data when turtlebot is turning

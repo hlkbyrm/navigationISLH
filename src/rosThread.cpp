@@ -59,8 +59,12 @@ void RosThread::work(){
     this->targetPoseListFromMonitoringSub = n.subscribe("monitoringISLH/targetPoseList",2,&RosThread::targetPoseListCallback,this);
     this->targetPoseSub = n.subscribe("taskHandlerISLH/targetPose",2,&RosThread::targetPoseCallback,this);
     //publisher değiştirildi safety controller eklendi. minimal launchera ek olarak safe_keyop.launch çalıştırılması gerekiyor
-    if(!isKobuki)
-        this->turtlebotVelPublisher = n.advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity",1);
+    if(!isKobuki){
+        if (!isSafety)
+            this->turtlebotVelPublisher = n.advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity",1);
+        else
+            this->turtlebotVelPublisher = n.advertise<geometry_msgs::Twist>("/raw_velocity",1);
+    }
     else
         this->turtlebotVelPublisher = n.advertise<geometry_msgs::Twist>("/keyop_vel_smoother/raw_cmd_vel",1);
     this->turtlebotGyroSub = n.subscribe("/mobile_base/sensors/imu_data",1,&RosThread::turtlebotGyroCallback,this);
@@ -205,13 +209,23 @@ void RosThread::turtlebotGyroCallback(const sensor_msgs::Imu::ConstPtr& msg)
 
     //if we reached to our target send targetReached message and return from function
     double dist2Target = sqrt((robot.targetX-bin[robot.robotID][1])*(robot.targetX-bin[robot.robotID][1]) + (robot.targetY-bin[robot.robotID][2])*(robot.targetY-bin[robot.robotID][2]));
-    if(isFinished && dist2Target <= distanceThreshold){
+    if (dist2Target <= distanceThreshold){
         if(!targetReached){
             std_msgs::UInt8 msg;
             msg.data = 1;
             targetReachedPublisher.publish(msg);
             targetReached = true;
         }
+    }
+
+    if(isFinished && dist2Target <= distanceThreshold){
+ /*       if(!targetReached){
+            std_msgs::UInt8 msg;
+            msg.data = 1;
+            targetReachedPublisher.publish(msg);
+            targetReached = true;
+        }
+        */
         velocityVector = twist;
         return;
     }
@@ -323,13 +337,23 @@ void RosThread::poseListCallback(const ISLH_msgs::robotPositions::ConstPtr& msg)
 
     //if we reached to our target send targetReached msg and return from function
     double dist2Target = sqrt((robot.targetX-bin[robot.robotID][1])*(robot.targetX-bin[robot.robotID][1]) + (robot.targetY-bin[robot.robotID][2])*(robot.targetY-bin[robot.robotID][2]));
+    if (dist2Target <= distanceThreshold){
+            if(!targetReached){
+                std_msgs::UInt8 _msg;
+                _msg.data = 1;
+                targetReachedPublisher.publish(_msg);
+                targetReached = true;
+            }
+    }
+
     if(isFinished && dist2Target <= distanceThreshold){
-        if(!targetReached){
+/*        if(!targetReached){
             std_msgs::UInt8 _msg;
             _msg.data = 1;
             targetReachedPublisher.publish(_msg);
             targetReached = true;
         }
+*/
         velocityVector = twist;
         return;
     }
@@ -413,6 +437,8 @@ bool RosThread::readConfigFile(QString filename)
         qDebug()<<result["linearVelocity"].toDouble();
 
         this->isKobuki = result["isKobuki"].toInt() == 1;
+
+        this->isSafety = result["isSafety"].toInt() == 1;
 
         this->angularVelocity = result["angularVelocity"].toDouble();
 
